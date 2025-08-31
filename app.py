@@ -1,7 +1,9 @@
 import os
+import asyncio
 from flask import Flask, request
 from telegram import Update
 from telegram.ext import Application, MessageHandler, filters, ContextTypes
+from difflib import SequenceMatcher
 
 TOKEN = os.getenv("BOT_TOKEN")
 WEBHOOK_URL = os.getenv("WEBHOOK_URL")
@@ -10,8 +12,6 @@ app = Flask(__name__)
 application = Application.builder().token(TOKEN).build()
 
 # --- handlers ---
-from difflib import SequenceMatcher
-
 ACCEPTED_QUESTIONS = [
     "was this necessary?",
     "do we really need this?",
@@ -22,6 +22,8 @@ def is_similar(a, b, threshold=0.7):
     return SequenceMatcher(None, a, b).ratio() > threshold
 
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if not update.message:
+        return
     user_message = update.message.text.strip().lower()
     if any(is_similar(user_message, q) for q in ACCEPTED_QUESTIONS):
         await update.message.reply_text("🚩 FLAG")
@@ -49,4 +51,7 @@ def home():
     return "Bot is running!"
 
 if __name__ == "__main__":
+    loop = asyncio.get_event_loop()
+    loop.create_task(application.initialize())
+    loop.create_task(application.start())
     app.run(host="0.0.0.0", port=int(os.getenv("PORT", 5000)))
