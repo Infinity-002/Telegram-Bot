@@ -35,7 +35,7 @@ application.add_handler(
 )
 
 # --- webhook route ---
-@app.route(f"/webhook/{TOKEN}", methods=["POST"])
+@app.route(f"{WEBHOOK_URL}/webhook/{TOKEN}", methods=["POST"])
 def webhook():
     try:
         data = request.get_json(force=True)
