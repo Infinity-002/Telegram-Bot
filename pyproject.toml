@@ -10,5 +10,4 @@ dependencies = [
     "pillow>=11.3.0",
     "pycryptodome>=3.23.0",
     "python-telegram-bot>=22.3",
-    "telegram>=0.0.1",
 ]
