@@ -1,5 +1,6 @@
 import os
 import asyncio
+import threading
 from flask import Flask, request
 from telegram import Update
 from telegram.ext import Application, MessageHandler, filters, ContextTypes
@@ -30,9 +31,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     else:
         await update.message.reply_text("I don't understand that.")
 
-application.add_handler(
-    MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message)
-)
+application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
 
 # --- webhook route ---
 @app.route(f"/webhook/{TOKEN}", methods=["POST"])
@@ -48,19 +47,18 @@ def webhook():
         print(f"Webhook error: {e}")
         return "error", 500
 
-
 @app.route("/")
 def home():
     return "Bot is running!"
 
+def run_telegram():
+    asyncio.run(application.initialize())
+    asyncio.run(application.start())
+    # keep the bot running forever
+    asyncio.get_event_loop().run_forever()
 
 if __name__ == "__main__":
-    async def run():
-        await application.initialize()
-        await application.start()
-        # don't use polling or run_webhook here
-
-    loop = asyncio.get_event_loop()
-    loop.create_task(run())
-
+    # Start Telegram in background thread
+    threading.Thread(target=run_telegram, daemon=True).start()
+    # Start Flask server
     app.run(host="0.0.0.0", port=int(os.getenv("PORT", 5000)))
