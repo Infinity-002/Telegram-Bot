@@ -1,5 +1,4 @@
 import os
-import asyncio
 from flask import Flask, request
 from telegram import Update
 from telegram.ext import Application, MessageHandler, filters, ContextTypes
@@ -34,12 +33,13 @@ application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_m
 
 # --- webhook route ---
 @app.route(f"/webhook/{TOKEN}", methods=["POST"])
-async def webhook():
+def webhook():
     try:
         data = request.get_json(force=True)
         update = Update.de_json(data, application.bot)
         if update:
-            await application.process_update(update)
+            # hand off to telegram app (async inside Flask sync view)
+            application.update_queue.put_nowait(update)
             return "ok"
         return "no update", 400
     except Exception as e:
@@ -52,7 +52,15 @@ def home():
     return "Bot is running!"
 
 if __name__ == "__main__":
-    loop = asyncio.get_event_loop()
-    loop.create_task(application.initialize())
-    loop.create_task(application.start())
+    # Start the application (event loop) in background
+    import asyncio
+
+    async def run():
+        await application.initialize()
+        await application.start()
+        # do not call application.run_polling()!
+        # leave webhook processing to Flask
+
+    asyncio.get_event_loop().create_task(run())
+
     app.run(host="0.0.0.0", port=int(os.getenv("PORT", 5000)))
