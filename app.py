@@ -1,4 +1,5 @@
 import os
+import asyncio
 from flask import Flask, request
 from telegram import Update
 from telegram.ext import Application, MessageHandler, filters, ContextTypes
@@ -29,7 +30,9 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     else:
         await update.message.reply_text("I don't understand that.")
 
-application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
+application.add_handler(
+    MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message)
+)
 
 # --- webhook route ---
 @app.route(f"/webhook/{TOKEN}", methods=["POST"])
@@ -38,7 +41,6 @@ def webhook():
         data = request.get_json(force=True)
         update = Update.de_json(data, application.bot)
         if update:
-            # hand off to telegram app (async inside Flask sync view)
             application.update_queue.put_nowait(update)
             return "ok"
         return "no update", 400
@@ -51,16 +53,14 @@ def webhook():
 def home():
     return "Bot is running!"
 
-if __name__ == "__main__":
-    # Start the application (event loop) in background
-    import asyncio
 
+if __name__ == "__main__":
     async def run():
         await application.initialize()
         await application.start()
-        # do not call application.run_polling()!
-        # leave webhook processing to Flask
+        # don't use polling or run_webhook here
 
-    asyncio.get_event_loop().create_task(run())
+    loop = asyncio.get_event_loop()
+    loop.create_task(run())
 
     app.run(host="0.0.0.0", port=int(os.getenv("PORT", 5000)))
