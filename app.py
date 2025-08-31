@@ -37,7 +37,7 @@ application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_m
 
 # --- webhook route ---
 # This part has been updated to handle async operations correctly.
-@app.route(f"/{TOKEN}", methods=["POST"])
+@app.route(f"/webhook/{TOKEN}", methods=["POST"])
 async def webhook():
     try:
         data = request.get_json(force=True)
