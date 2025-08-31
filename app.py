@@ -3,7 +3,7 @@ import asyncio
 import threading
 from flask import Flask, request
 from telegram import Update
-from telegram.ext import Application, MessageHandler, filters, ContextTypes
+from telegram.ext import Application, MessageHandler, filters, ContextTypes, CommandHandler
 from difflib import SequenceMatcher
 
 TOKEN = os.getenv("BOT_TOKEN")
@@ -19,6 +19,9 @@ ACCEPTED_QUESTIONS = [
     "is this important?",
 ]
 
+async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_text("Hello! I am your bot. Send me a question.")
+
 def is_similar(a, b, threshold=0.7):
     return SequenceMatcher(None, a, b).ratio() > threshold
 
@@ -28,10 +31,10 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_message = update.message.text.strip().lower()
     if any(is_similar(user_message, q) for q in ACCEPTED_QUESTIONS):
         await update.message.reply_text("🚩 FLAG")
-    else:
-        await update.message.reply_text("I don't understand that.")
-
+        
+application.add_handler(CommandHandler("start", start))
 application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
+# Removed undefined 'echo' handler to fix NameError
 
 # --- webhook route ---
 @app.route(f"/webhook/{TOKEN}", methods=["POST"])
