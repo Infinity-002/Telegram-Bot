@@ -1,6 +1,6 @@
 import os
 from flask import Flask, request
-from telegram.ext import Update
+from telegram import Update
 from telegram.ext import Application, MessageHandler, filters, ContextTypes
 
 TOKEN = os.getenv("BOT_TOKEN")
